@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const contactsPath = path.join(__dirname, '/model/contacts.json');
+const contactsPath = path.join(__dirname, '/contacts.json');
 const uniqid = require('uniqid');
 
 const listContacts = async () => {
@@ -10,22 +10,21 @@ const listContacts = async () => {
 
 const getContactById = async contactId => {
   const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
+  const contact = contacts.find(({ id }) => id.toString() === contactId);
   return contact;
 };
 
 const removeContact = async contactId => {
   const contacts = await listContacts();
-  const newContacts = contacts.filter(({ id }) => id !== contactId);
-  if (contacts.length === newContacts.length) {
-    return console.log(`Contact with this ID ${contactId}  is not found!`);
-  }
+  const contact = contacts.filter(({ id }) => id.toString() === contactId);
+  if (!contacts) return;
+  const newContacts = contacts.filter(({ id }) => id.toString() !== contactId);
   await fs.writeFile(
     contactsPath,
     JSON.stringify(newContacts, null, 2),
     'utf8',
   );
-  return newContacts;
+  return contact;
 };
 
 const addContact = async body => {

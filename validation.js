@@ -1,18 +1,14 @@
-import 'core-js/es6/promise';
-import 'core-js/es6/set';
-import 'core-js/es6/map';
+const Joi = require('Joi');
 
-import * as yup from 'yup';
-
-const schemaValidation = yup.object().shape({
-  name: yup.string().alphanum().min(3).max(20),
-  email: yup.string().email(),
-  phone: yup.string().pattern(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/),
+const schemaValidation = Joi.object({
+  name: Joi.string().min(3).max(20),
+  email: Joi.string().email(),
+  phone: Joi.string().pattern(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/),
 });
-const schemaUpdateContact = yup.object().shape({
-  email: yup.string().email(),
-  password: yup.string().min(6).required(),
-  phone: yup.string().pattern(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/),
+const schemaUpdateContact = Joi.object({
+  email: Joi.string().email(),
+  password: Joi.string().min(6).required(),
+  phone: Joi.string().pattern(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/),
 });
 const validate = (schema, obj, next) => {
   const { error } = schema.validate.obj;
