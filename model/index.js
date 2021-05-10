@@ -16,8 +16,8 @@ const getContactById = async contactId => {
 
 const removeContact = async contactId => {
   const contacts = await listContacts();
-  const contact = contacts.filter(({ id }) => id.toString() === contactId);
-  if (!contacts) return;
+  const contact = contacts.find(({ id }) => id.toString() === contactId);
+  if (!contact) return console.log('We coudnt find this contact');
   const newContacts = contacts.filter(({ id }) => id.toString() !== contactId);
   await fs.writeFile(
     contactsPath,
