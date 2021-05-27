@@ -1,14 +1,23 @@
-const Contacts = require('../model/index');
+const Contacts = require('../model/contacts');
 
-const listContacts = async (_req, res, next) => {
+const { HttpCode } = require('../services/constants');
+
+const listContacts = async (req, res, next) => {
   try {
-    const contacts = await Contacts.listContacts();
+    const userId = req.user.id;
+    const { contacts, total, limit, offset } = await Contacts.listContacts(
+      userId,
+      req.query,
+    );
     return res.json({
       status: 'Success',
-      code: 200,
+      code: HttpCode.OK,
       message: 'Your Contacts',
       data: {
+        total,
         contacts,
+        limit,
+        offset,
       },
     });
   } catch (e) {
@@ -18,20 +27,21 @@ const listContacts = async (_req, res, next) => {
 
 const getContactById = async (req, res, next) => {
   try {
-    const contact = await Contacts.getContactById(req.params.contactId);
+    const userId = req.user.id;
+    const contact = await Contacts.getContactById(userId, req.params.contactId);
     if (contact) {
       return res.json({
         status: 'Success',
-        code: 200,
+        code: HttpCode.OK,
         message: 'Here is your requested contact',
         data: {
           contact,
         },
       });
     } else {
-      return res.status(404).json({
+      return res.status(HttpCode.NOT_FOUND).json({
         status: 'Error',
-        code: 404,
+        code: HttpCode.NOT_FOUND,
         message: 'Not found',
       });
     }
@@ -42,10 +52,11 @@ const getContactById = async (req, res, next) => {
 
 const addContact = async (req, res, next) => {
   try {
-    const contact = await Contacts.addContact(req.body);
-    return res.status(201).json({
+    const userId = req.user.id;
+    const contact = await Contacts.addContact({ ...req.body, owner: userId });
+    return res.status(HttpCode.CREATED).json({
       status: 'Success',
-      code: 201,
+      code: HttpCode.CREATED,
       message: 'You add a new contact!',
       data: {
         contact,
@@ -58,20 +69,21 @@ const addContact = async (req, res, next) => {
 
 const removeContact = async (req, res, next) => {
   try {
-    const contact = await Contacts.removeContact(req.params.contactId);
+    const userId = req.user.id;
+    const contact = await Contacts.removeContact(userId, req.params.contactId);
     if (contact) {
-      return res.status(200).json({
+      return res.status(HttpCode.OK).json({
         status: 'Success',
-        code: 200,
+        code: HttpCode.OK,
         message: 'Contact deleted!',
         data: {
           contact,
         },
       });
     } else {
-      return res.status(404).json({
+      return res.status(HttpCode.NOT_FOUND).json({
         status: 'Error',
-        code: 404,
+        code: HttpCode.NOT_FOUND,
         message: 'Contact not found',
       });
     }
@@ -89,9 +101,11 @@ const updateContact = async (req, res, next) => {
         message: 'Missing fields',
       });
     }
+    const userId = req.user.id;
     const contact = await Contacts.updateContact(
       req.params.contactId,
       req.body,
+      userId,
     );
     if (contact) {
       return res.status(200).json({
@@ -122,24 +136,26 @@ const updateStatusContact = async (req, res, next) => {
         message: 'missing field favorite',
       });
     }
+    const userId = req.user.id;
     const contact = await Contacts.updateStatusContact(
       req.params.contactId,
       req.body,
       req.favorite,
+      userId,
     );
     if (contact) {
-      return res.status(200).json({
+      return res.status(HttpCode.OK).json({
         status: 'Success',
-        code: 200,
+        code: HttpCode.OK,
         message: 'Contact added to favorite!',
         data: {
           contact,
         },
       });
     } else {
-      return res.status(404).json({
+      return res.status(HttpCode.NOT_FOUND).json({
         status: 'Error',
-        code: 404,
+        code: HttpCode.NOT_FOUND,
         message: 'Not found',
       });
     }
@@ -151,8 +167,8 @@ const updateStatusContact = async (req, res, next) => {
 module.exports = {
   listContacts,
   getContactById,
+  addContact,
   removeContact,
   updateContact,
-  addContact,
   updateStatusContact,
 };
