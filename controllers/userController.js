@@ -1,14 +1,16 @@
 const User = require('../model/user');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
+const AVATARS_OF_USERS = process.env.AVATARS_OF_USERS;
+const UploadAvatar = require('../services/upload-avatars-local');
 
 require('dotenv').config();
-
 const { HttpCode } = require('../services/constants');
 
-const reg = async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
-    const user = await User.findByEmail(req.body.email);
+    const { email } = req.body;
+    const user = await User.findByEmail(email);
     if (user) {
       return res.status(HtttpCode.CONFLICT).json({
         status: 'error',
@@ -25,6 +27,7 @@ const reg = async (req, res, next) => {
         user: {
           email: newUser.email,
           subscription: newUser.subscription,
+          avatar: newUser.avatarURL,
         },
       },
     });
@@ -32,7 +35,7 @@ const reg = async (req, res, next) => {
     if (e.name === 'validationError' || e.name === 'mongoError') {
       return next({
         status: HttrpCode.BAD_REQUEST,
-        message: Joi.isError(new Error('Bad Request')),
+        message: e.message.replace(/"/g, ''),
       });
     }
     next(e);
@@ -134,10 +137,31 @@ const updateSubscription = async (req, res, next) => {
   }
 };
 
-module.export = {
-  reg,
+const avatars = async (req, res, next) => {
+  try {
+    const id = req.user.id;
+    const uploads = new UploadAvatar(AVATARS_OF_USERS);
+    const avatarUrl = await uploads.saveAvatarToStatic({
+      idUser: id,
+      pathFile: req.file.path,
+      name: req.file.name,
+      oldFile: req.user.avatar,
+    });
+    await User.updateAvatar(id.avatarUrl);
+    return res.json({
+      status: 'success',
+      code: HttpCode.OK,
+      data: { avatarUrl },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+module.exports = {
+  register,
   login,
   logout,
   currentUser,
   updateSubscription,
+  avatars,
 };
