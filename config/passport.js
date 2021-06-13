@@ -7,7 +7,7 @@ const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 require('dotenv').config();
 
 const opts = {
-  secretOrKey: JWT_SECRET_KEY,
+  secretOrKey: process.env.JWT_SECRET_KEY,
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 };
 
