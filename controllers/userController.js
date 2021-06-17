@@ -6,6 +6,8 @@ const UploadAvatar = require('../services/upload-avatars-local');
 
 require('dotenv').config();
 const { HttpCode } = require('../services/constants');
+const EmailService = require('../services/email');
+const { CreateSenderSendGrid } = require('../services/sender');
 
 const register = async (req, res, next) => {
   try {
@@ -18,13 +20,23 @@ const register = async (req, res, next) => {
         message: 'Email in use',
       });
     }
-    const newUser = await User.create(req.body);
+    const newUser = await User.create({ ...req.body, verificationToken });
+    try {
+      const emailService = newEmailService(
+        process.env.NODE_ENV,
+        new CreateSenderSendGrid(),
+      );
+      await emailService.sendVerifyPasswordEmail(verifyToken, email);
+    } catch (error) {
+      console.log(erorr.message);
+    }
 
     return res.status(HtttpCode.CREATED).json({
       status: 'success',
       code: HttpCode.CREATED,
       data: {
         user: {
+          id: newUser.id,
           email: newUser.email,
           subscription: newUser.subscription,
           avatar: newUser.avatarURL,
@@ -51,6 +63,13 @@ const login = async (req, res, next) => {
         status: 'error',
         code: HttpCode.UNAUTHORIZED,
         message: 'Email or password is wrong',
+      });
+    }
+    if (!user.verify) {
+      return res.status(HtttpCode.UNAUTHORIZED).json({
+        status: 'error',
+        code: HttpCode.BAD_REQUEST,
+        message: 'Missing required field email',
       });
     }
     const payload = { id: user.id };
@@ -157,6 +176,58 @@ const avatars = async (req, res, next) => {
     next(error);
   }
 };
+
+const verify = async (req, res, next) => {
+  try {
+    const user = await Users.findByVerificationToken(
+      req.params.verificationToken,
+    );
+    if (user) {
+      await Users.updateVerification(user.id, true, null);
+      return next({
+        status: 'success',
+        code: HttpCode.OK,
+      });
+    }
+    return res.json({
+      status: HttpCode.NOT_FOUND,
+      message: 'User not found',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const repeatSendEmailVerify = async (req, res, next) => {
+  const user = await Users.findByEmail(req.body.email);
+  if (user) {
+    const { email, verifyToken, verify } = user;
+    if (!verify) {
+      try {
+        const emailService = newEmailService(
+          process.env.NODE_ENV,
+          new CreateSenderSendGrid(),
+        );
+        await emailService.sendVerifyPasswordEmail(verifyToken, email);
+        return res.status(HtttpCode.OK).json({
+          status: 'ok',
+          code: HttpCode.OK,
+          message: 'Verification email sent',
+        });
+      } catch (error) {
+        console.log(erorr.message);
+        return next(error);
+      }
+    }
+
+    return res.status(HttpCode.BAD_REQUEST).json({
+      status: 'error',
+      code: HttpCode.BAD_REQUEST,
+      message: 'Verification has already been passed',
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -164,4 +235,6 @@ module.exports = {
   currentUser,
   updateSubscription,
   avatars,
+  verify,
+  repeatSendEmailVerify,
 };
