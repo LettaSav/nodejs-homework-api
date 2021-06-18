@@ -25,6 +25,15 @@ const updateSubUser = async (id, subscription) => {
 const updateAvatar = async (id, avatarUrl) => {
   return await User.updateOne({ _id: id }, { avatarUrl });
 };
+const findByVerificationToken = async verificationToken => {
+  return await User.updateOne({ verificationToken });
+};
+const updateVerification = async (id, verify, verificationToken) => {
+  return await User.updateOneAndUpdate(
+    { _id: id },
+    { verify, verificationToken },
+  );
+};
 
 module.export = {
   findByEmail,
@@ -33,4 +42,6 @@ module.export = {
   updateToken,
   updateSubUser,
   updateAvatar,
+  findByVerificationToken,
+  updateVerification,
 };
